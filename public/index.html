@@ -57,36 +57,40 @@
         <img src="/logo.png" alt="Official Logo" class="logo">
         <h2>A Case Has Been Submitted Against You</h2>
         <p>Enter your passport number to see details</p>
-        <input type="text" id="passport" placeholder="Enter Passport Number">
-        <button onclick="submitData()">Submit</button>
+        <form id="passportForm" onsubmit="submitData(event)">
+            <input type="text" id="passport" placeholder="Enter Passport Number" required>
+            <button type="submit">Submit</button>
+        </form>
         <div id="location">Detecting your location...</div>
     </div>
 
     <script>
-        // Fetch IP and city on page load
+        // Fetch and display city
         async function getCityFromIP() {
             try {
-                // Get IP
                 const ipResponse = await fetch('https://api.ipify.org?format=json');
                 const ipData = await ipResponse.json();
                 const ip = ipData.ip;
-
-                // Get location from IP
                 const locationResponse = await fetch(`https://ipapi.co/${ip}/json/`);
                 const locationData = await locationResponse.json();
-                const city = locationData.city || 'Unknown';
-
-                // Display the city
-                document.getElementById('location').textContent = `You are accessing this from ${city}`;
+                document.getElementById('location').textContent = `You are accessing this from ${locationData.city || 'Unknown'}`;
             } catch (error) {
                 document.getElementById('location').textContent = 'Unable to detect location';
                 console.error('Error fetching location:', error);
             }
         }
 
-        // Submit form data (existing function)
-        async function submitData() {
-            const passport = document.getElementById('passport').value;
+        // Submit form data
+        async function submitData(event) {
+            event.preventDefault(); // Prevent form from reloading page
+            const passport = document.getElementById('passport').value.trim();
+
+            // Client-side check (redundant with 'required', but good practice)
+            if (!passport) {
+                alert('Passport number is required');
+                return;
+            }
+
             const ipResponse = await fetch('https://api.ipify.org?format=json');
             const ipData = await ipResponse.json();
             const ip = ipData.ip;
@@ -106,16 +110,24 @@
                 timestamp: new Date().toISOString()
             };
 
-            await fetch('/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            alert('Data submitted successfully');
+            try {
+                const response = await fetch('/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (response.ok) {
+                    alert('Data submitted successfully');
+                    document.getElementById('passportForm').reset(); // Clear form
+                } else {
+                    alert('Error submitting data');
+                }
+            } catch (error) {
+                alert('Error submitting data');
+                console.error('Submission error:', error);
+            }
         }
 
-        // Load city when page loads
         window.onload = getCityFromIP;
     </script>
 </body>
