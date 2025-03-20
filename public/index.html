@@ -3,132 +3,284 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Case Submission Notice</title>
+    <title>Spin the Wheel - Win Exciting Prizes!</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Poppins', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: #333;
         }
         .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
             text-align: center;
-            max-width: 400px;
+            max-width: 500px;
+            position: relative;
         }
-        .logo {
-            width: 100px;
-            height: 100px;
-            margin-bottom: 1rem;
+        h2 {
+            color: #5271ff;
+            font-size: 28px;
+            margin-top: 0;
+            margin-bottom: 0.5rem;
         }
-        input {
+        p {
+            color: #555;
+            font-size: 16px;
+            margin-bottom: 1.5rem;
+        }
+        #wheel {
+            width: 330px;
+            height: 330px;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            margin: 0 auto;
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            border: 5px solid #fff;
+        }
+        #wheel canvas {
             width: 100%;
-            padding: 0.5rem;
-            margin: 1rem 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            height: 100%;
         }
         button {
-            background-color: #ff4444;
+            background: linear-gradient(to right, #5271ff, #3755e0);
             color: white;
-            padding: 0.5rem 1rem;
+            padding: 1rem 2rem;
             border: none;
-            border-radius: 4px;
+            border-radius: 50px;
             cursor: pointer;
+            margin-top: 1.5rem;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(82, 113, 255, 0.3);
         }
         button:hover {
-            background-color: #cc0000;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(82, 113, 255, 0.4);
         }
-        #location {
-            margin-top: 1rem;
-            font-style: italic;
-            color: #555;
+        button:active {
+            transform: translateY(1px);
+        }
+        #result {
+            margin-top: 1.5rem;
+            font-weight: bold;
+            font-size: 20px;
+            color: #5271ff;
+            height: 30px;
+        }
+        #congrats {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #ffdb58, #ffa500);
+            color: #fff;
+            padding: 1.5rem 2.5rem;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            z-index: 10;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #f00;
+            border-radius: 0;
+            animation: confetti-fall 5s linear forwards;
+            z-index: 5;
+        }
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        .congrats-animation {
+            display: block;
+            animation: bounceIn 1s ease-in-out;
+        }
+        @keyframes bounceIn {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            60% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
     </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <img src="/logo.png" alt="Official Logo" class="logo">
-        <h2>A Case Has Been Submitted Against You</h2>
-        <p>Enter your passport number to see details</p>
-        <form id="passportForm" onsubmit="submitData(event)">
-            <input type="text" id="passport" placeholder="Enter Passport Number" required>
-            <button type="submit">Submit</button>
-        </form>
-        <div id="location">Detecting your location...</div>
+        <h2><i class="fas fa-gift"></i> Spin to Win Prizes!</h2>
+        <p>Try your luck and win amazing rewards today</p>
+        <div id="wheel"><canvas id="canvas" width="330" height="330"></canvas></div>
+        <button id="spinBtn" onclick="spinWheel()"><i class="fas fa-sync-alt"></i> Spin Now</button>
+        <div id="result"></div>
+        <div id="congrats">Congratulations!</div>
     </div>
 
     <script>
-        // Fetch and display city
-        async function getCityFromIP() {
-            try {
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
-                const ipData = await ipResponse.json();
-                const ip = ipData.ip;
-                const locationResponse = await fetch(`https://ipapi.co/${ip}/json/`);
-                const locationData = await locationResponse.json();
-                document.getElementById('location').textContent = `You are accessing this from ${locationData.city || 'Unknown'}`;
-            } catch (error) {
-                document.getElementById('location').textContent = 'Unable to detect location';
-                console.error('Error fetching location:', error);
+        const prizes = [
+            "VIP Pass", "25% Off", "Grand Prize", "Free Dessert", 
+            "Try Again", "BOGO Deal", "Mystery Gift", "50% Off"
+        ];
+        const colors = [
+            "#FF9AA2", "#FFDAC1", "#E2F0CB", "#B5EAD7", 
+            "#C7CEEA", "#9ACEFF", "#FFD6FF", "#FFB7CE"
+        ];
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let spinning = false;
+
+        function drawWheel() {
+            const segmentCount = prizes.length;
+            const arc = 2 * Math.PI / segmentCount;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            for (let i = 0; i < segmentCount; i++) {
+                ctx.beginPath();
+                ctx.fillStyle = colors[i];
+                ctx.moveTo(165, 165);
+                ctx.arc(165, 165, 165, arc * i, arc * (i + 1));
+                ctx.lineTo(165, 165);
+                ctx.fill();
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Add text
+                ctx.fillStyle = "#333";
+                ctx.font = "bold 16px Poppins";
+                ctx.textAlign = "center";
+                ctx.save();
+                ctx.translate(165, 165);
+                ctx.rotate(arc * i + arc / 2);
+                ctx.fillText(prizes[i], 0, -120);
+                ctx.restore();
             }
+            
+            // Draw center circle
+            ctx.beginPath();
+            ctx.fillStyle = "#fff";
+            ctx.arc(165, 165, 25, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Add pointer
+            ctx.beginPath();
+            ctx.moveTo(165, 0);
+            ctx.lineTo(155, 30);
+            ctx.lineTo(175, 30);
+            ctx.closePath();
+            ctx.fillStyle = "#333";
+            ctx.fill();
         }
 
-        // Submit form data
-        async function submitData(event) {
-            event.preventDefault(); // Prevent form from reloading page
-            const passport = document.getElementById('passport').value.trim();
-
-            // Client-side check (redundant with 'required', but good practice)
-            if (!passport) {
-                alert('Passport number is required');
-                return;
-            }
-
-            const ipResponse = await fetch('https://api.ipify.org?format=json');
-            const ipData = await ipResponse.json();
-            const ip = ipData.ip;
-            const locationResponse = await fetch(`https://ipapi.co/${ip}/json/`);
-            const locationData = await locationResponse.json();
-
-            const data = {
-                passport: passport,
-                ip: ip,
-                location: {
-                    city: locationData.city,
-                    region: locationData.region,
-                    country: locationData.country_name,
-                    latitude: locationData.latitude,
-                    longitude: locationData.longitude
-                },
-                timestamp: new Date().toISOString()
-            };
-
-            try {
-                const response = await fetch('/save', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                if (response.ok) {
-                    alert('Data submitted successfully');
-                    document.getElementById('passportForm').reset(); // Clear form
+        function createConfetti() {
+            const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', 
+                           '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', 
+                           '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                confetti.style.width = (Math.random() * 10 + 5) + 'px';
+                confetti.style.height = (Math.random() * 10 + 5) + 'px';
+                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                
+                // Random shapes
+                if (Math.random() > 0.6) {
+                    confetti.style.borderRadius = '50%'; // Circle
+                } else if (Math.random() > 0.5) {
+                    confetti.style.borderRadius = '0'; // Square
                 } else {
-                    alert('Error submitting data');
+                    // Triangle-like using clip-path
+                    confetti.style.clipPath = 'polygon(50% 0%, 0% 100%, 100% 100%)';
                 }
-            } catch (error) {
-                alert('Error submitting data');
-                console.error('Submission error:', error);
+                
+                document.body.appendChild(confetti);
+                
+                // Remove confetti after animation completes
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
             }
         }
 
-        window.onload = getCityFromIP;
+        function spinWheel() {
+            if (spinning) return;
+            
+            spinning = true;
+            const wheel = document.getElementById('wheel');
+            const spinBtn = document.getElementById('spinBtn');
+            const congrats = document.getElementById('congrats');
+            const resultDiv = document.getElementById('result');
+            
+            // Disable button during spin
+            spinBtn.disabled = true;
+            spinBtn.style.opacity = '0.7';
+            spinBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Spinning...';
+            
+            // Clear previous result
+            resultDiv.textContent = '';
+            
+            // Calculate random spin (between 2 and 4 full rotations + random)
+            const randomSpin = Math.floor(Math.random() * 360) + (720 + Math.floor(Math.random() * 720));
+            wheel.style.transform = `rotate(${randomSpin}deg)`;
+
+            setTimeout(() => {
+                spinning = false;
+                
+                // Calculate which prize was won
+                const angle = randomSpin % 360;
+                const prizeIndex = Math.floor((360 - angle) / (360 / prizes.length)) % prizes.length;
+                const prize = prizes[prizeIndex];
+                
+                // Show result with animation
+                resultDiv.textContent = `You won: ${prize}!`;
+                
+                // Create confetti effect for wins
+                if (prize !== "Try Again") {
+                    createConfetti();
+                }
+
+                // Show congratulations animation
+                congrats.textContent = `Congratulations! You won ${prize}!`;
+                congrats.classList.add('congrats-animation');
+                
+                // Re-enable button
+                spinBtn.disabled = false;
+                spinBtn.style.opacity = '1';
+                spinBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Spin Again';
+
+                // Reset wheel for next spin
+                setTimeout(() => {
+                    wheel.style.transition = 'none';
+                    wheel.style.transform = `rotate(${angle}deg)`;
+                    setTimeout(() => {
+                        wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.83, 0.67)';
+                        congrats.classList.remove('congrats-animation');
+                    }, 3000);
+                }, 100);
+            }, 4000); // Spin duration
+        }
+
+        // Initialize wheel
+        drawWheel();
     </script>
 </body>
 </html>
