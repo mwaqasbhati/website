@@ -14,7 +14,7 @@
             margin: 0;
             background: linear-gradient(135deg, #6e8efb, #a777e3);
             color: #333;
-            overflow: hidden; /* Prevent scrollbars from balloons */
+            overflow: hidden;
         }
         .container {
             background: rgba(255, 255, 255, 0.95);
@@ -24,7 +24,7 @@
             text-align: center;
             max-width: 500px;
             position: relative;
-            z-index: 10; /* Ensure container stays above balloons */
+            z-index: 10;
         }
         h2 {
             color: #5271ff;
@@ -104,7 +104,6 @@
             60% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
-        /* Floating Balloons */
         .balloon {
             position: absolute;
             width: 40px;
@@ -200,17 +199,16 @@
 
         function createBalloons() {
             const balloonColors = ['#f44336', '#2196f3', '#4caf50', '#ffeb3b', '#9c27b0', '#ff9800'];
-            for (let i = 0; i < 15; i++) { // Create 15 balloons
+            for (let i = 0; i < 15; i++) {
                 const balloon = document.createElement('div');
                 balloon.classList.add('balloon');
                 balloon.style.backgroundColor = balloonColors[Math.floor(Math.random() * balloonColors.length)];
-                balloon.style.left = `${Math.random() * 90 + 5}vw`; // Random horizontal position
-                balloon.style.animationDuration = `${Math.random() * 2 + 3}s`; // 3-5s duration
-                balloon.style.width = `${Math.random() * 20 + 30}px`; // 30-50px width
-                balloon.style.height = `${Math.random() * 30 + 50}px`; // 50-80px height
+                balloon.style.left = `${Math.random() * 90 + 5}vw`;
+                balloon.style.animationDuration = `${Math.random() * 2 + 3}s`;
+                balloon.style.width = `${Math.random() * 20 + 30}px`;
+                balloon.style.height = `${Math.random() * 30 + 50}px`;
                 document.body.appendChild(balloon);
                 
-                // Remove balloon after animation
                 setTimeout(() => balloon.remove(), 5000);
             }
         }
@@ -242,11 +240,10 @@
                 
                 resultDiv.textContent = `You won: ${prize}!`;
                 
-                // Show balloons and congrats for wins
                 if (prize !== "Try Again") {
                     createBalloons();
                 }
-                
+
                 congrats.textContent = `Congratulations! You won ${prize}!`;
                 congrats.classList.add('congrats-animation');
                 
