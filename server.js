@@ -54,6 +54,17 @@ app.post('/save', (req, res) => {
         });
 });
 
+// Add this after your existing routes
+app.get('/submissions', (req, res) => {
+    db.all('SELECT * FROM submissions', [], (err, rows) => {
+        if (err) {
+            res.status(500).send('Error retrieving data');
+        } else {
+            res.json(rows);
+        }
+    });
+});
+
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
