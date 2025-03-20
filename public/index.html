@@ -14,6 +14,7 @@
             margin: 0;
             background: linear-gradient(135deg, #6e8efb, #a777e3);
             color: #333;
+            overflow: hidden; /* Prevent scrollbars from balloons */
         }
         .container {
             background: rgba(255, 255, 255, 0.95);
@@ -23,6 +24,7 @@
             text-align: center;
             max-width: 500px;
             position: relative;
+            z-index: 10; /* Ensure container stays above balloons */
         }
         h2 {
             color: #5271ff;
@@ -90,21 +92,8 @@
             font-size: 24px;
             font-weight: bold;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-            z-index: 10;
+            z-index: 20;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-        }
-        .confetti {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background-color: #f00;
-            border-radius: 0;
-            animation: confetti-fall 5s linear forwards;
-            z-index: 5;
-        }
-        @keyframes confetti-fall {
-            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
         }
         .congrats-animation {
             display: block;
@@ -114,6 +103,31 @@
             0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
             60% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        /* Floating Balloons */
+        .balloon {
+            position: absolute;
+            width: 40px;
+            height: 60px;
+            border-radius: 50% 50% 40% 40%;
+            background-color: #f44336;
+            animation: floatUp 4s ease-in-out forwards;
+            z-index: 5;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .balloon::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 20px;
+            background: #fff;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(-20vh) rotate(20deg); opacity: 0; }
         }
     </style>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
@@ -159,7 +173,6 @@
                 ctx.lineWidth = 2;
                 ctx.stroke();
                 
-                // Add text
                 ctx.fillStyle = "#333";
                 ctx.font = "bold 16px Poppins";
                 ctx.textAlign = "center";
@@ -170,14 +183,12 @@
                 ctx.restore();
             }
             
-            // Draw center circle
             ctx.beginPath();
             ctx.fillStyle = "#fff";
             ctx.arc(165, 165, 25, 0, 2 * Math.PI);
             ctx.fill();
             ctx.stroke();
             
-            // Add pointer
             ctx.beginPath();
             ctx.moveTo(165, 0);
             ctx.lineTo(155, 30);
@@ -187,37 +198,20 @@
             ctx.fill();
         }
 
-        function createConfetti() {
-            const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', 
-                           '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', 
-                           '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
-            
-            for (let i = 0; i < 100; i++) {
-                const confetti = document.createElement('div');
-                confetti.classList.add('confetti');
-                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                confetti.style.left = Math.random() * 100 + 'vw';
-                confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
-                confetti.style.width = (Math.random() * 10 + 5) + 'px';
-                confetti.style.height = (Math.random() * 10 + 5) + 'px';
-                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        function createBalloons() {
+            const balloonColors = ['#f44336', '#2196f3', '#4caf50', '#ffeb3b', '#9c27b0', '#ff9800'];
+            for (let i = 0; i < 15; i++) { // Create 15 balloons
+                const balloon = document.createElement('div');
+                balloon.classList.add('balloon');
+                balloon.style.backgroundColor = balloonColors[Math.floor(Math.random() * balloonColors.length)];
+                balloon.style.left = `${Math.random() * 90 + 5}vw`; // Random horizontal position
+                balloon.style.animationDuration = `${Math.random() * 2 + 3}s`; // 3-5s duration
+                balloon.style.width = `${Math.random() * 20 + 30}px`; // 30-50px width
+                balloon.style.height = `${Math.random() * 30 + 50}px`; // 50-80px height
+                document.body.appendChild(balloon);
                 
-                // Random shapes
-                if (Math.random() > 0.6) {
-                    confetti.style.borderRadius = '50%'; // Circle
-                } else if (Math.random() > 0.5) {
-                    confetti.style.borderRadius = '0'; // Square
-                } else {
-                    // Triangle-like using clip-path
-                    confetti.style.clipPath = 'polygon(50% 0%, 0% 100%, 100% 100%)';
-                }
-                
-                document.body.appendChild(confetti);
-                
-                // Remove confetti after animation completes
-                setTimeout(() => {
-                    confetti.remove();
-                }, 5000);
+                // Remove balloon after animation
+                setTimeout(() => balloon.remove(), 5000);
             }
         }
 
@@ -230,44 +224,36 @@
             const congrats = document.getElementById('congrats');
             const resultDiv = document.getElementById('result');
             
-            // Disable button during spin
             spinBtn.disabled = true;
             spinBtn.style.opacity = '0.7';
             spinBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Spinning...';
             
-            // Clear previous result
             resultDiv.textContent = '';
             
-            // Calculate random spin (between 2 and 4 full rotations + random)
             const randomSpin = Math.floor(Math.random() * 360) + (720 + Math.floor(Math.random() * 720));
             wheel.style.transform = `rotate(${randomSpin}deg)`;
 
             setTimeout(() => {
                 spinning = false;
                 
-                // Calculate which prize was won
                 const angle = randomSpin % 360;
                 const prizeIndex = Math.floor((360 - angle) / (360 / prizes.length)) % prizes.length;
                 const prize = prizes[prizeIndex];
                 
-                // Show result with animation
                 resultDiv.textContent = `You won: ${prize}!`;
                 
-                // Create confetti effect for wins
+                // Show balloons and congrats for wins
                 if (prize !== "Try Again") {
-                    createConfetti();
+                    createBalloons();
                 }
-
-                // Show congratulations animation
+                
                 congrats.textContent = `Congratulations! You won ${prize}!`;
                 congrats.classList.add('congrats-animation');
                 
-                // Re-enable button
                 spinBtn.disabled = false;
                 spinBtn.style.opacity = '1';
                 spinBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Spin Again';
 
-                // Reset wheel for next spin
                 setTimeout(() => {
                     wheel.style.transition = 'none';
                     wheel.style.transform = `rotate(${angle}deg)`;
@@ -276,10 +262,9 @@
                         congrats.classList.remove('congrats-animation');
                     }, 3000);
                 }, 100);
-            }, 4000); // Spin duration
+            }, 4000);
         }
 
-        // Initialize wheel
         drawWheel();
     </script>
 </body>

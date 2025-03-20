@@ -26,20 +26,20 @@ db.run(`CREATE TABLE IF NOT EXISTS clicks (
 
 // Track clicks on root URL
 app.get('/', async (req, res) => {
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const referrer = req.headers['referer'] || 'Direct';
-
+    const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress).split(',')[0].trim();
+    let city = 'Unknown';
     try {
-        const response = await fetch(`https://ipapi.co/${ip}/json/`);
+        const response = await fetch(`https://freeipapi.com/api/json/${ip}`);
         const locationData = await response.json();
+        city = locationData.cityName || 'Unknown';
         db.run(`INSERT INTO clicks (ip, referrer, city, country, timestamp) 
                 VALUES (?, ?, ?, ?, ?)`,
-            [ip, referrer, locationData.city || 'Unknown', locationData.country_name || 'Unknown', new Date().toISOString()],
-            (err) => { if (err) console.error('Error saving click:', err); });
+            [ip, req.headers['referer'] || 'Direct', city, locationData.countryName || 'Unknown', new Date().toISOString()]);
     } catch (error) {
         console.error('Error fetching location:', error);
     }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.write(`<script>document.getElementById('location').textContent = 'You are spinning from ${city}';</script>`);
 });
 
 // View clicks (optional, for /view.html)
