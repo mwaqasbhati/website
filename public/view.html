@@ -3,89 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Submissions and Clicks</title>
+    <title>Spin Wheel Analytics</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        h2 { margin-top: 40px; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            max-width: 800px;
+            width: 100%;
+        }
+        h1 {
+            color: #5271ff;
+            font-size: 28px;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: linear-gradient(to right, #5271ff, #3755e0);
+            color: white;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        #noData {
+            text-align: center;
+            color: #555;
+            font-size: 18px;
+            margin-top: 1rem;
+        }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h2>Submitted Passport Data</h2>
-    <table id="submissionsTable">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Passport</th>
-                <th>IP</th>
-                <th>City</th>
-                <th>Country</th>
-                <th>Timestamp</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
-    <h2>Link Clicks</h2>
-    <table id="clicksTable">
-        <thead>
+    <div class="container">
+        <h1>Spin Wheel Clicks</h1>
+        <table id="clicksTable">
             <tr>
                 <th>ID</th>
                 <th>IP</th>
                 <th>Referrer</th>
                 <th>City</th>
-                <th>Country</th>
                 <th>Timestamp</th>
             </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+        </table>
+        <div id="noData" style="display: none;">No clicks recorded yet.</div>
+    </div>
 
     <script>
-        async function loadSubmissions() {
-            const response = await fetch('/submissions');
-            const data = await response.json();
-            const tbody = document.querySelector('#submissionsTable tbody');
-            tbody.innerHTML = '';
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${row.id}</td>
-                    <td>${row.passport}</td>
-                    <td>${row.ip}</td>
-                    <td>${row.city}</td>
-                    <td>${row.country}</td>
-                    <td>${row.timestamp}</td>
-                `;
-                tbody.appendChild(tr);
+        fetch('/clicks')
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to fetch clicks');
+                return response.json();
+            })
+            .then(data => {
+                const table = document.getElementById('clicksTable');
+                const noDataDiv = document.getElementById('noData');
+                if (data.length === 0) {
+                    noDataDiv.style.display = 'block';
+                } else {
+                    data.forEach(row => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${row.id}</td>
+                            <td>${row.ip}</td>
+                            <td>${row.referrer || 'Direct'}</td>
+                            <td>${row.city || 'Unknown'}</td>
+                            <td>${new Date(row.timestamp).toLocaleString()}</td>
+                        `;
+                        table.appendChild(tr);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching clicks:', error);
+                document.getElementById('noData').textContent = 'Error loading click data.';
+                document.getElementById('noData').style.display = 'block';
             });
-        }
-
-        async function loadClicks() {
-            const response = await fetch('/clicks');
-            const data = await response.json();
-            const tbody = document.querySelector('#clicksTable tbody');
-            tbody.innerHTML = '';
-            data.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${row.id}</td>
-                    <td>${row.ip}</td>
-                    <td>${row.referrer}</td>
-                    <td>${row.city}</td>
-                    <td>${row.country}</td>
-                    <td>${row.timestamp}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        window.onload = () => {
-            loadSubmissions();
-            loadClicks();
-        };
     </script>
 </body>
 </html>

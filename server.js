@@ -9,12 +9,12 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static('public'));
 
+// Database setup
 const db = new sqlite3.Database('data.db', (err) => {
-    if (err) console.error(err);
-    console.log('Connected to database');
+    if (err) console.error('Database connection error:', err);
+    else console.log('Connected to database');
 });
 
-// Create clicks table (submissions table can stay but won’t be used)
 db.run(`CREATE TABLE IF NOT EXISTS clicks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ip TEXT,
@@ -22,34 +22,63 @@ db.run(`CREATE TABLE IF NOT EXISTS clicks (
     city TEXT,
     country TEXT,
     timestamp TEXT
-)`);
-
-// Track clicks on root URL
-app.get('/', async (req, res) => {
-    const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress).split(',')[0].trim();
-    let city = 'Unknown';
-    try {
-        const response = await fetch(`https://freeipapi.com/api/json/${ip}`);
-        const locationData = await response.json();
-        city = locationData.cityName || 'Unknown';
-        db.run(`INSERT INTO clicks (ip, referrer, city, country, timestamp) 
-                VALUES (?, ?, ?, ?, ?)`,
-            [ip, req.headers['referer'] || 'Direct', city, locationData.countryName || 'Unknown', new Date().toISOString()]);
-    } catch (error) {
-        console.error('Error fetching location:', error);
-    }
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-    res.write(`<script>document.getElementById('location').textContent = 'You are spinning from ${city}';</script>`);
+)`, (err) => {
+    if (err) console.error('Error creating table:', err);
 });
 
-// View clicks (optional, for /view.html)
+// Middleware to log visitors
+async function logVisitor(req, res, next) {
+    const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+    const referrer = req.headers['referer'] || 'Direct';
+    const timestamp = new Date().toISOString();
+
+    try {
+        const response = await fetch(`http://ip-api.com/json/${ip}`);
+        const locationData = await response.json();
+        const city = locationData.city || 'Unknown';
+        const country = locationData.country || 'Unknown';
+
+        db.run(`INSERT INTO clicks (ip, referrer, city, country, timestamp) 
+                VALUES (?, ?, ?, ?, ?)`,
+            [ip, referrer, city, country, timestamp],
+            (err) => {
+                if (err) console.error('Database insert error:', err);
+            });
+    } catch (error) {
+        console.error('Error fetching location:', error);
+        db.run(`INSERT INTO clicks (ip, referrer, city, country, timestamp) 
+                VALUES (?, ?, ?, ?, ?)`,
+            [ip, referrer, 'Unknown', 'Unknown', timestamp],
+            (err) => {
+                if (err) console.error('Database insert error:', err);
+            });
+    }
+    next();
+}
+
+app.use(logVisitor);
+
+// Routes
 app.get('/clicks', (req, res) => {
-    db.all('SELECT * FROM clicks', [], (err, rows) => {
-        if (err) res.status(500).send('Error retrieving clicks');
-        else res.json(rows);
+    db.all('SELECT * FROM clicks ORDER BY timestamp DESC', [], (err, rows) => {
+        if (err) {
+            console.error('Error retrieving clicks:', err);
+            return res.status(500).json({ error: 'Error retrieving data' });
+        }
+        res.json(rows);
     });
 });
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
+    console.log(`Visit http://localhost:${port} to test`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    db.close((err) => {
+        if (err) console.error('Error closing database:', err);
+        console.log('Database connection closed');
+        process.exit(0);
+    });
 });
